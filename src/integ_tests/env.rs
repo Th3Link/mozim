@@ -8,7 +8,7 @@ use std::{
 };
 
 const UDHCPD_CONF: &str = "/tmp/mozim_test_udhcpd.conf";
-const UDHCPD_PID_FILE_PATH: &str = "/tmp/mozim_test_udhcpd_pid";
+const UDHCPD_PID_FILE_PATH: &str = "/tmp/mozim_test_udhcpd.pid";
 const PID_FILE_PATH: &str = "/tmp/mozim_test_dnsmasq_pid";
 const TEST_DHCPD_NETNS: &str = "mozim_test";
 const LOG_FILE: &str = "/tmp/mozim_test_dnsmasq_log";
@@ -152,8 +152,8 @@ option  subnet 255.255.255.0
 option  router {TEST_DHCP_SRV_IP}
 option  dns    8.8.8.8
 
-lease_file  /tmp/mozim_udhcpd.leases
-pidfile     /tmp/mozim_udhcpd.pid
+lease_file  /tmp/mozim_test_udhcpd.leases
+pidfile     /tmp/mozim_test_udhcpd.pid
 opt lease   10
 no_ping
 "#
@@ -170,7 +170,8 @@ fn start_udhcpd() {
             "netns",
             "exec",
             TEST_DHCPD_NETNS,
-            "busybox udhcpd",
+            "busybox",
+            "udhcpd",
             UDHCPD_CONF,
         ])
         .spawn()
@@ -183,6 +184,7 @@ fn start_udhcpd() {
 
 fn stop_udhcpd() {
     if !std::path::Path::new(UDHCPD_PID_FILE_PATH).exists() {
+        log::warn!("PID file {UDHCPD_PID_FILE_PATH} does not exist");
         return;
     }
     let mut fd =
@@ -224,6 +226,10 @@ fn run_cmd_ignore_failure(cmd: &str) -> String {
             "".to_string()
         }
     }
+}
+
+pub(crate) fn set_client_ip(address: Ipv4Addr) {
+    run_cmd(&format!("ip addr add {address}/24 dev {TEST_NIC_CLI}",));
 }
 
 pub(crate) fn with_dhcp_env<T>(test: T)

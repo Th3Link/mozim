@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use super::env::{
-    init_log, with_dhcp_env, with_udhcpd_env, FOO1_HOSTNAME,
+    init_log, set_client_ip, with_dhcp_env, with_udhcpd_env, FOO1_HOSTNAME,
     FOO1_STATIC_IP_HOSTNAME_AS_CLIENT_ID, TEST_CLS_DST, TEST_CLS_DST_LEN,
     TEST_CLS_RT_ADDR, TEST_DHCP_SRV_ADDR, TEST_NIC_CLI,
 };
@@ -81,6 +81,7 @@ fn test_dhcpv4_unicast_renew_uses_srv_id() {
 
             assert_eq!(lease.srv_id, TEST_DHCP_SRV_ADDR);
             assert_eq!(lease.yiaddr, Ipv4Addr::new(192, 0, 2, 100));
+            set_client_ip(lease.yiaddr);
 
             // Wait until we are safely past T1 (50% lease time)
             tokio::time::sleep(Duration::from_secs(6)).await;
@@ -105,8 +106,7 @@ fn test_dhcpv4_unicast_renew_uses_srv_id() {
                             // still fine, keep polling
                         }
                         other => {
-                            // Done(_), Renewed(_), Idle, etc. → acceptable end
-                            return other;
+                            log::debug!("Received unused dhcp state: {other:?}")
                         }
                     }
                 }

@@ -3,7 +3,6 @@ name: CI
 on:
   pull_request:
    types: [opened, synchronize, reopened]
-  workflow_dispatch:
 
 jobs:
   rust_lint:
